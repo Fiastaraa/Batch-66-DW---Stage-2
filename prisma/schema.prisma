@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id       Int       @id @default(autoincrement())
+  name     String
+  email    String    @unique
+  products Product[]
+}
+
 model Product {
   id        Int      @id @default(autoincrement())
   name      String
@@ -14,4 +21,7 @@ model Product {
   stock     Int
   category  String?
   createdAt DateTime @default(now())
+
+  userId Int
+  user   user @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
