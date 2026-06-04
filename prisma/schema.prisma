@@ -21,7 +21,6 @@ model Product {
   stock     Int
   category  String?
   createdAt DateTime @default(now())
-
-  userId Int
-  user   user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
 }

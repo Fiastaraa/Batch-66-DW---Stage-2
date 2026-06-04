@@ -1,18 +1,16 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../prisma/prisma";
 
 export const createUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { name, email } = req.body as { name: string; email: string };
+    const { name, email } = req.body;
 
     if (!name || !email) {
       res.status(400).json({
-        message: "name and email are required",
+        message: "Name and email are required",
       });
       return;
     }
@@ -28,14 +26,24 @@ export const createUser = async (
       message: "Success create user",
       data: user,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      res.status(400).json({
+        message: "Email already exists",
+      });
+      return;
+    }
+
     res.status(500).json({
       message: "Internal server error",
     });
   }
 };
 
-export const getUsers = async (req: Request, res: Response): Promise<void> => {
+export const getUsers = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
       include: {
@@ -53,4 +61,3 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
     });
   }
 };
-

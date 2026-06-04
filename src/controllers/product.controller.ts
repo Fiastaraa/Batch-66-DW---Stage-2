@@ -1,53 +1,58 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-const parseNumber = (value: unknown): number | undefined => {
-  if (value === undefined || value === null) return undefined;
-  const n = Number(value);
-  return Number.isNaN(n) ? undefined : n;
-};
+import prisma from "../../prisma/prisma";
 
 export const getProducts = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { minPrice, sortBy, order, take, skip } = req.query;
+    const { minPrice, category, userId, sortBy, order, take, skip } = req.query;
 
-    const where: Record<string, any> = {};
+    const where: any = {};
 
-    const minPriceNum = parseNumber(minPrice);
-    if (minPriceNum !== undefined) {
-      where.price = { gte: minPriceNum };
+    if (minPrice) {
+      where.price = {
+        gte: Number(minPrice),
+      };
     }
 
-    const takeNum = parseNumber(take);
-    const skipNum = parseNumber(skip);
+    if (category) {
+      where.category = String(category);
+    }
 
-    const allowedSortFields: Record<string, true> = {
-      price: true,
-      stock: true,
-      createdAt: true,
-      id: true,
-      name: true,
+    if (userId) {
+      where.userId = Number(userId);
+    }
+
+    // Sorting
+    const orderBy: any = {};
+    if (sortBy) {
+      const allowedFields = ["price", "name", "stock", "createdAt"];
+      if (allowedFields.includes(String(sortBy))) {
+        orderBy[String(sortBy)] = order === "asc" ? "asc" : "desc";
+      }
+    } else {
+      orderBy.createdAt = "desc";
+    }
+
+    // Query configuration
+    const prismaQuery: any = {
+      where,
+      orderBy,
+      include: {
+        user: true, // Menampilkan data user terkait
+      },
     };
 
-    const sortField = typeof sortBy === "string" ? sortBy : undefined;
-    const isAllowedSortField = sortField && allowedSortFields[sortField];
+    // Pagination
+    if (take) {
+      prismaQuery.take = Number(take);
+    }
+    if (skip) {
+      prismaQuery.skip = Number(skip);
+    }
 
-    const orderValue =
-      typeof order === "string" && order.toLowerCase() === "desc"
-        ? "desc"
-        : "asc";
-
-    const products = await prisma.product.findMany({
-      where,
-      take: takeNum,
-      skip: skipNum,
-      orderBy: isAllowedSortField ? { [sortField as string]: orderValue } : undefined,
-    });
+    const products = await prisma.product.findMany(prismaQuery);
 
     res.status(200).json({
       message: "Success get products",
@@ -60,3 +65,49 @@ export const getProducts = async (
   }
 };
 
+export const createProduct = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { name, price, stock, category, userId } = req.body;
+
+    if (!name || price === undefined || stock === undefined || !userId) {
+      res.status(400).json({
+        message: "Name, price, stock, and userId are required",
+      });
+      return;
+    }
+
+    // Periksa apakah user dengan userId tersebut ada
+    const userExists = await prisma.user.findUnique({
+      where: { id: Number(userId) },
+    });
+
+    if (!userExists) {
+      res.status(404).json({
+        message: "User not found",
+      });
+      return;
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        price: Number(price),
+        stock: Number(stock),
+        category: category || null,
+        userId: Number(userId),
+      },
+    });
+
+    res.status(201).json({
+      message: "Success create product",
+      data: product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
