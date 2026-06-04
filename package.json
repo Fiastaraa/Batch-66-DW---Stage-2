@@ -1,0 +1,24 @@
+{
+  "name": "task-day-3",
+  "version": "1.0.0",
+  "description": "Express TypeScript Prisma PostgreSQL inventory API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "pg": "^8.11.1",
+    "prisma": "^5.13.0",
+    "@prisma/client": "^5.13.0",
+    "zod": "^3.24.1"
+  },
+
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.14.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.4"
+  }
+}
